@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic QR Code Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        /* --- General Styling (Slightly improved) --- */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 30px;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h2, h3 {
+            color: #007bff;
+            margin-bottom: 15px;
+        }
+
+        /* --- Controls Section Styling --- */
+        #controls { 
+            margin-bottom: 30px; 
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px 25px; /* Added horizontal gap */
+            align-items: center;
+            max-width: 900px;
+        }
+        
+        /* New section for color controls */
+        #color-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-left: 20px;
+            border-left: 1px solid #eee;
+        }
+
+        /* --- Form Element Styling (Select and Input) --- */
+        #controls label {
+            font-weight: bold;
+            color: #555;
+            white-space: nowrap;
+        }
+
+        #controls select, #controls input[type="text"] {
+            font-size: 1.1em;
+            padding: 10px 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+            outline: none;
+        }
+
+        #controls select:focus, #controls input[type="text"]:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        /* Styling for the color input */
+        input[type="color"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
+            width: 30px; /* Smaller color swatch */
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 0;
+            border: 2px solid #ccc;
+            transition: border-color 0.3s;
+        }
+        input[type="color"]:hover {
+            border-color: #007bff;
+        }
+
+
+        /* --- Button Styling --- */
+        #generateBtn {
+            font-size: 1.1em;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+        }
+
+        #generateBtn:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        #generateBtn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+        }
+
+        /* --- QR Code Container Styling --- */
+        #qrcode {
+            width: 256px; 
+            height: 256px; 
+            padding: 15px; 
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transform: perspective(1000px); 
+            transition: transform 0.5s ease-in-out;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h2>🔗 Dynamic QR Code Generator</h2>
+
+    <div id="controls">
+        <label for="protocol">Protocol:</label>
+        <select id="protocol">
+            <option value="https://">https://</option>
+            <option value="http://">http://</option>
+            <option value="mailto:">mailto:</option>
+            <option value="tel:">tel:</option>
+            <option value="sms:">sms:</option> <option value="">Text/Plain</option>
+        </select>
+
+        <label for="address">Address/Data:</label>
+        <input type="text" id="address" placeholder="e.g., website, email, phone number" value="www.google.com">
+        
+        <div id="color-controls">
+            <label for="colorDark">Dot Color:</label>
+            <input type="color" id="colorDark" value="#000000">
+
+            <label for="colorLight">BG Color:</label>
+            <input type="color" id="colorLight" value="#ffffff">
+        </div>
+
+        <button id="generateBtn">✨ Generate QR Code</button>
+    </div>
+
+    <h3>Your Generated QR Code:</h3>
+    <div id="qrcode"></div>
+
+    <script type="text/javascript">
+        // 4. Get references to our HTML elements
+        const protocolSelect = document.getElementById("protocol");
+        const addressInput = document.getElementById("address");
+        const generateButton = document.getElementById("generateBtn");
+        // New references for color inputs
+        const colorDarkInput = document.getElementById("colorDark");
+        const colorLightInput = document.getElementById("colorLight");
+        
+        const qrContainer = document.getElementById("qrcode");
+
+        let qrCode = null;
+
+        // 5. Create the function that generates the QR code
+        function generateQR() {
+            const protocol = protocolSelect.value;
+            const address = addressInput.value.trim();
+            
+            // Get current color values
+            const colorDark = colorDarkInput.value;
+            const colorLight = colorLightInput.value;
+
+            if (!address) {
+                alert("Please enter an address or data for the QR code.");
+                return;
+            }
+
+            // Only prepend protocol if one is selected (e.g., skip for Text/Plain)
+            const fullData = protocol + address; 
+
+            if (qrCode) {
+                // If it exists, clear the old one and re-create it with new options
+                // The qrcode.js library requires re-initialization for color changes
+                
+                // 1. Remove the existing DOM elements (canvas or table)
+                qrContainer.innerHTML = '';
+                
+                // 2. Re-initialize the QRCode object with new settings
+                qrCode = new QRCode(qrContainer, {
+                    text: fullData,
+                    width: 256,
+                    height: 256,
+                    // Use the dynamic color values from inputs
+                    colorDark : colorDark,
+                    colorLight : colorLight,
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+            } else {
+                // If it's the first time, create a new QRCode object
+                qrCode = new QRCode(qrContainer, {
+                    text: fullData,
+                    width: 256,
+                    height: 256,
+                    // Use the dynamic color values from inputs
+                    colorDark : colorDark,
+                    colorLight : colorLight,
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            }
+        }
+
+        // 6. Add event listeners for dynamic updates
+        
+        // Listen to the button click
+        generateButton.addEventListener("click", generateQR);
+        
+        // Listen to color changes and regenerate the QR code immediately
+        colorDarkInput.addEventListener("input", generateQR);
+        colorLightInput.addEventListener("input", generateQR);
+
+        // Listen for Enter key on the text input
+        addressInput.addEventListener("keyup", function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                generateQR();
+            }
+        });
+        
+        // Listen for protocol changes and regenerate
+        protocolSelect.addEventListener("change", generateQR);
+
+
+        // 7. Optional: Generate a default QR code when the page first loads
+        window.onload = generateQR;
+
+    </script>
+
+</body>
+</html>
